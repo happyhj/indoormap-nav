@@ -1,0 +1,15 @@
+{
+	"name": "indoormap-nav",
+	"version": "0.0.1",
+	"description": "",
+	"main": "dist/indoormapNav.js",
+	"es2015": "src/index.js",
+	"scripts": {
+		"start": "webpack-dev-server --open",
+		"build": "webpack --env production && webpack --env packaged "
+	},
+	"author": {
+		"name": "Hee Jae Kim"
+	},
+	"license": "MIT"
+}
