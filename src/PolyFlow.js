@@ -245,8 +245,8 @@ export default class PolyFlow extends Component {
 		const WIDTH = window.innerWidth ;
 		const HEIGHT = window.innerHeight;
 		const camPosScaler = 0.02;
-		const YOffset = 0;
-//		const YOffset = -2;
+// 		const YOffset = 0;
+		const YOffset = -1;
 		
 		const camera = this.camera = new THREE.OrthographicCamera(
 			WIDTH * camPosScaler / - 2,
@@ -461,7 +461,7 @@ export default class PolyFlow extends Component {
 		const WIDTH = window.innerWidth ;
 		const HEIGHT = window.innerHeight;
 		const camPosScaler = 0.02;
-		const YOffset = 0;
+		const YOffset = -1;
 		this.camera.aspect = window.innerWidth / window.innerHeight;
 		this.camera.left = WIDTH * camPosScaler / - 2;
 		this.camera.right = WIDTH * camPosScaler / 2;
