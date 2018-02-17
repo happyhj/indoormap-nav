@@ -33,262 +33,117 @@ limitations under the License.
 				height: 100%;
                 overflow: hidden;
 			}
+			.dg.main.a {
+				width: 300px !important;
+			}
 		</style>
 	</head>
 	<body>
 
 		<div id="viewer"></div>
+		<script type="text/javascript" src="./lib/dat.gui.min.js"></script>
+		<script src="./lib/three.min.js"></script>		
+		<script src="./lib/OBJLoader.js"></script>
+		<script src="./lib/MTLLoader.js"></script>
+		<script src="./lib/OrbitControls.js"></script>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/egjs-axes/2.5.0/axes.pkgd.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js"></script>
-		<script src="../src/objLoader.js"></script>
+        <script src="../dist/bundle.js"></script>
 		<script>
-            // THREE.JS VIEWER
-            var raycaster = new THREE.Raycaster();
-            var tapPoint = new THREE.Vector2();
+            const polyFlow = new app.PolyFlow(document.getElementById("viewer"), {
+				resources: [
+					"./3d_objects/b2",
+					"./3d_objects/b1",
+					"./3d_objects/1",
+					"./3d_objects/2",
+					"./3d_objects/3",
+					"./3d_objects/4",
+					// "./3d_objects/windmill"
+				],
+				preProcessToModel: function(mesh) {
+					mesh.rotation.x = -Math.PI/2;
+					return mesh;
+				},
+				objectMargin: parseFloat(GetParamUrl("objectMargin")) || 2,
+				scaleOption: {
+					localScale: parseFloat(GetParamUrl("localScale")) || 0.000038
+					// rectBound: 6
+					// boxBound: 6
+				},
+				stretchApplyThreshold: parseFloat(GetParamUrl("stretchApplyThreshold")) || 2,
+				stretchStrength: parseFloat(GetParamUrl("stretchStrength")) ||  .6,
+				scaleStrength: parseFloat(GetParamUrl("scaleStrength")) || 0.395,
+				rotationStrength: parseFloat(GetParamUrl("rotationStrength")) || 1,
+				rotationApplyThreshold: parseFloat(GetParamUrl("rotationApplyThreshold")) || 2,
+				scaleApplyThreshold: parseFloat(GetParamUrl("scaleApplyThreshold")) ||  1.9,
+			});
 
-			const WIDTH = viewer.offsetWidth;
-            const HEIGHT = viewer.offsetHeight;
-            var camPosScaler = 0.02;
-            var YOffset = -2;
-            
-            var camera = new THREE.OrthographicCamera( WIDTH * camPosScaler / - 2, WIDTH * camPosScaler / 2, HEIGHT * camPosScaler / 2 + YOffset, HEIGHT * camPosScaler/ - 2 + YOffset, -1000, 1000 );
-			camera.position.set(0.25045350708296965, 1.7041388793736647, 0.18216399368949676);
-            camera.lookAt(0, 1.5, 0);
+			var gui = new dat.GUI();
+			// gui.__controllers[0].domElement.style = "width:100%";
 
-			// var camera = new THREE.PerspectiveCamera( 60, WIDTH / HEIGHT, 0.01, 100 );
-			// camera.position.set( 5, 3, 5 );
-            // camera.lookAt( 0, 1.5, 0 );
-            
-            // var controls = new THREE.OrbitControls( camera );
+			gui.add(polyFlow.scaleOption, 'localScale', 0.00002, 0.00006, 0.000001).onChange(function(v) {
+				polyFlow.setScaleOption({
+					localScale: v
+				});
+				SetParamUrl("localScale", v);
 
-			var scene = new THREE.Scene();
-			scene.background = new THREE.Color( 0x222222 );
-            scene.add( new THREE.GridHelper( 10, 10 ) );
-            
-			var ambient = new THREE.HemisphereLight( 0xcccccc, 0xffffff, 0.85 );
-            ambient.position.set( -0.5, 0.75, -1 );
-            scene.add( ambient );
-            
-			// var light = new THREE.DirectionalLight( 0xffffff, 0.75 );
-			// light.position.set( 1, 0.75, 0.5 );
-            // scene.add( light );
+			});
+			gui.add(polyFlow, 'objectMargin', 0.158, 4, 0.001).onChange(function(v) {
+				polyFlow.setObjectMargin(v);
+				SetParamUrl("objectMargin", v);
+			});
+			gui.add(polyFlow, 'stretchStrength', 0, 1, 0.001).onChange(function(v) {
+				polyFlow.setStretchStrength(v);
+				SetParamUrl("stretchStrength", v);
+			});
+			gui.add(polyFlow, 'stretchApplyThreshold', 0.1, 3, 0.001).onChange(function(v) {
+				polyFlow.setStretchApplyThreshold(v);
+				SetParamUrl("stretchApplyThreshold", v);
+			});
+			gui.add(polyFlow, 'scaleStrength', 0, 2, 0.001).onChange(function(v) {
+				polyFlow.setScaleStrength(v);
+				SetParamUrl("scaleStrength", v);
+			});
+			gui.add(polyFlow, 'scaleApplyThreshold', 1, 5, 0.001).onChange(function(v) {
+				polyFlow.setScaleApplyThreshold(v);
+				SetParamUrl("scaleApplyThreshold", v);
+			});
+			gui.add(polyFlow, 'rotationStrength', 0, 1, 0.001).onChange(function(v) {
+				polyFlow.setRotationStrength(v);
+				SetParamUrl("rotationStrength", v);
+			});
+			gui.add(polyFlow, 'rotationApplyThreshold', 1, 5, 0.001).onChange(function(v) {
+				polyFlow.setRotationApplyThreshold(v);
+				SetParamUrl("rotationApplyThreshold", v);
+			});
+			
+			// gui.__controllers[0].setValue(0)
+			// insertParam("key", "123")
+			// insertParam("key", "45")
+			// polyFlow.setRotationStrength(0);
 
-			var renderer = new THREE.WebGLRenderer();
-			renderer.setPixelRatio( window.devicePixelRatio );
-			renderer.setSize( WIDTH, HEIGHT );
-            viewer.appendChild( renderer.domElement );
-            
-			function animate(now) {
-                var time = now / 5000;
+function SetParamUrl (_k, _v) {// replace and add new parameters
+	let arrParams = window.location.search !== '' ? decodeURIComponent(window.location.search.substr(1)).split('&').map(_v => _v.split('=')) : Array();
+	let index = arrParams.findIndex((_v) => _v[0] === _k); 
+	index = index !== -1 ? index : arrParams.length;
+	_v === null ? arrParams = arrParams.filter((_v, _i) => _i != index) : arrParams[index] = [_k, _v];
+	let _search = encodeURIComponent(arrParams.map(_v => _v.join('=')).join('&'));
 
-                //// Turn Table Effect   
-                // camera.position.x = Math.sin( time ) * 5;
-				// camera.position.z = Math.cos( time ) * 5;
-				// camera.lookAt( 0, 1.5, 0 );
-				renderer.render( scene, camera );
-				requestAnimationFrame( animate );
-            }
+	let newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + (arrParams.length > 0 ? '?' +  _search : ''); 
 
-            requestAnimationFrame( animate );
-            
-            indoorGlobal = new THREE.Group();
+	// window.location = newurl; //reload 
 
-            // POLY REST API
-			const API_KEY = '*** INSERT YOUR API KEY HERE ***';
-			function loadAsset( id , objIdx) {
-                return new Promise((res, rej) => {
-                    var objUrl = `${id}.obj`;
-                    var mtlUrl = `${id}.mtl`;
-                    var request = new XMLHttpRequest();
-                    request.open( 'GET', mtlUrl, true );
-                    request.addEventListener( 'load', function ( event ) {
-                        var loader = new THREE.MTLLoader();
-                            loader.setCrossOrigin( true );
-                            loader.setTexturePath( objUrl );
-                            loader.load( mtlUrl, function ( materials ) {
-                                var loader = new THREE.OBJLoader();
-                                loader.setMaterials( materials );
-                                loader.load( objUrl, function ( object ) {
-                                    object.rotation.x = -Math.PI/2;
+	if (history.pushState) { // without reload  
+		window.history.pushState({path:newurl}, null, newurl);
+	}
+}
 
-                                    var box = new THREE.Box3();
-                                    box.setFromObject( object );
+function GetParamUrl(_k) {// get parameter by key
+	let sPageURL = decodeURIComponent(window.location.search.substr(1)),
+		sURLVariables = sPageURL.split('&').map(_v => _v.split('='));
+	let _result = sURLVariables.find(_v => _v[0] === _k);
 
-                                    // re-center
-                                    var center = box.getCenter();
-                                    // center.y = box.max.y;
-
-                                    center.y = box.max.y;
-                                    
-                                    object.position.sub( center );
-                                    
-                                    // scale
-                                    var scaler = new THREE.Group();
-                                    scaler.add( object );
-                                    var scaleFactor = 6 / box.getSize().length();
-                                    scaler.scale.setScalar( scaleFactor );
-                                    
-                                    var offsetFactor = objIdx * 1 * 50000;
-                                    var offset = offsetFactor * scaleFactor;
-                                    var position = scaler.position.y;
-                                    scaler.position.y = position + offset;
-                                    indoorGlobal.add( scaler );
-                                    // scene.add( scaler );                            
-                                    res({ 
-                                        url: objUrl,
-                                        obj: scaler,
-                                        // obj: scaler,
-                                        offset: offset,
-                                        pos: position,
-                                        initScale: scaleFactor
-                                    });
-                                } );
-                            } );
-                    } );
-                    request.send( null );
-                });
-            }
-            
-            objInfo = [];
-
-            Promise.all([
-                loadAsset('../src/obj/b2', 0),
-                loadAsset('../src/obj/b1', 1),
-                loadAsset('../src/obj/1', 2),
-                loadAsset('../src/obj/2',3),
-                loadAsset('../src/obj/3', 4),
-                loadAsset('../src/obj/4', 5)
-            ]).then(results => {
-                results.forEach((result, idx) => {
-                    console.log(result, idx)
-                    objInfo[idx] = result;
-                    // objInfo[result.objIdx].pos = result.pos;
-                    // objInfo[result.objIdx].obj = result.obj;
-                    // objInfo[result.objIdx].initScale = result.initScale;
-                });
-
-                scene.add( indoorGlobal ); 
-
-                initInteraction();
-                console.log(results);
-            });
-
-            function initInteraction() {
-                var Axes = eg.Axes;
-                var PanInput = Axes.PanInput;
-
-                var objPosList = objInfo.map(objItem => objItem.pos + objItem.offset);
-                var posMax = Math.max.apply( Math, objPosList);
-                var posMin = Math.min.apply(Math, objPosList);
-                // create eg.Axes with option
-                axes = new Axes({
-                    y: { range: [posMin, posMax] }
-                }, {
-                    deceleration : 0.00005
-                }, {
-                    y: posMin
-                });
-
-                axes.on({
-                    "change": evt => {
-                        console.log("change", evt.pos.y);
-                        update(evt.pos.y);
-                    },
-                    "release": evt => {
-                        var dists = objInfo.map(objItem => {
-                            return Math.abs(objItem.pos + objItem.offset - evt.destPos.y);
-                        });
-                        var targetFloorIdx = dists.indexOf(Math.min.apply(null, dists));
-                        console.log("release", dists);
-                        // if(evt.isTrusted) {
-                        setTimeout(() => {
-                            evt.stop();
-                            goToNthFloor(targetFloorIdx, evt.duration);
-                        }, 0);
-                        // }
-                    }
-                });
-                const panInput = new PanInput(document.body, {
-                    scale: [0.01, 0.01]
-                });
-                axes.connect([null, "y"], panInput); 
-
-                indoorGlobal.position.y = posMin;
-
-                // console.log(axes.get("y"));
-                update(axes.get().y);
-            }
-
-            function goToNthFloor(floorIdx, duration) {
-                console.log("goToNthFloor", floorIdx);
-                axes.setTo({"y": objInfo[floorIdx].pos + objInfo[floorIdx].offset }, duration || 300);
-            } 
-
-            function update(posY) {
-                indoorGlobal.position.y = - posY;
-                objInfo.forEach((objItem, objIdx) => {
-                    // var offsetFactor = objIdx * 1 * 50000;
-                    // offset                    
-                    var direction = objItem.pos + objItem.offset - posY;
-                    var dist = Math.abs(direction);
-                    //  거리가 0 일때 최고,  거리가 2 이상 일때 기존 스케일 적용 
-                    var scale = objItem.obj.scale.x;
-
-                    var maxScale = 0.45;
-                    var stretchScale = 1.2;
-                    var scaleApplyThreshold = 2;
-                    var stretchApplyThreshold = 2;
-                    
-                    // var maxOffset = ;
-                    if (Math.abs(direction) > stretchApplyThreshold) {
-                        direction = direction > 0 ? stretchApplyThreshold : -stretchApplyThreshold;
-                    }
-
-                    if (dist > scaleApplyThreshold) {
-                        dist = scaleApplyThreshold;
-                    }
-
-                    dist = 1 - dist / scaleApplyThreshold;
-                    direction = direction * stretchScale;
-
-                    scale = objItem.initScale + objItem.initScale * maxScale * dist;
-                    // var x = objItem.obj.position.x; 
-                    // var y = objItem.obj.position.y; 
-                    // var z = objItem.obj.position.z; 
-
-                    // // scaler.position.y = scaler.position.y + offsetFactor * scaleFactor
-                    //console.log(direction, objItem.offset)
-                    objItem.obj.position.set(
-                        objItem.obj.position.x,
-                        objItem.pos + objItem.offset + direction,//  * maxScale * dist,// + offsetFactor, 
-                        objItem.obj.position.z); 
-                
-                    objItem.obj.scale.set(scale, scale, scale); 
-                });
-
-                function onClick( event ) {
-                    // console.log("onClick", event.clientX, event.clientY );
-                    tapPoint.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-                    tapPoint.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-
-                    // update the picking ray with the camera and mouse position
-                    raycaster.setFromCamera( tapPoint, camera );
-
-                    // calculate objects intersecting the picking ray
-                    var intersects = raycaster.intersectObjects( objInfo.map(objItem => objItem.obj) );
-                    // var intersectsMap = {};
-                    
-
-
-                    console.log(Object.keys(intersects).length);                  
-                    // for ( var i = 0; i < intersects.length; i++ ) {
-                    //     intersects[ i ].object.material.color.set( 0xff0000 );
-                    // } 
-                }
-                document.getElementById("viewer").addEventListener( 'click', onClick, false );
-
-            }
+	return _result && x_result[1];
+}
 		</script>
 	</body>
 </html>
